@@ -110,4 +110,57 @@ public class SchedulerJobService {
             log.error(e.getMessage(), e);
         }
     }
+    public boolean startJobNow(SchedulerJobInfo schedulerJobInfo){
+        try{
+            SchedulerJobInfo jobInfo=schedulerRepository.findByJobName(schedulerJobInfo.getJobName());
+            jobInfo.setJobStatus("SCHEDULED & STARTED");
+            schedulerRepository.save(jobInfo);
+            schedulerFactoryBean.getScheduler().triggerJob(new JobKey(schedulerJobInfo.getJobName(),schedulerJobInfo.getJobGroup()));
+            log.info(">>>>> jobName = [" + jobInfo.getJobName() + "]" + " scheduled and started now.");
+            return true;
+        }
+        catch(SchedulerException e){
+            log.error("Failed to start new job - {}", schedulerJobInfo.getJobName(), e);
+            return false;
+        }
+    }
+    public boolean pauseJob(SchedulerJobInfo jobInfo){
+        try{
+            SchedulerJobInfo existingJobInfo=schedulerRepository.findByJobName(jobInfo.getJobName());
+            existingJobInfo.setJobStatus("PAUSED");
+            schedulerRepository.save(existingJobInfo);
+            schedulerFactoryBean.getScheduler().pauseJob(new JobKey(jobInfo.getJobName(),jobInfo.getJobGroup()));
+            log.info(">>>>> jobName = [" + jobInfo.getJobName() + "]" + " paused.");
+            return true;
+        }
+        catch(SchedulerException e){
+            log.error("Failed to pause job - {}", jobInfo.getJobName(), e);
+            return false;
+        }
+    }
+    public boolean resumeJob(SchedulerJobInfo jobInfo){
+        try{
+            SchedulerJobInfo existingJobInfo=schedulerRepository.findByJobName(jobInfo.getJobName());
+            existingJobInfo.setJobStatus("RESUMED");
+            schedulerRepository.save(existingJobInfo);
+            schedulerFactoryBean.getScheduler().resumeJob(new JobKey(jobInfo.getJobName(),jobInfo.getJobGroup()));
+            log.info(">>>>> jobName = [" + jobInfo.getJobName() + "]" + " resumed.");
+            return true;
+        } catch (SchedulerException e) {
+            log.error("Failed to resume job - {}", jobInfo.getJobName(), e);
+            return false;
+        }
+    }
+    public boolean deleteJob(SchedulerJobInfo jobInfo) {
+        try{
+            SchedulerJobInfo existingJobInfo=schedulerRepository.findByJobName(jobInfo.getJobName());
+            schedulerRepository.delete(existingJobInfo);
+            schedulerFactoryBean.getScheduler().deleteJob(new JobKey(jobInfo.getJobName(),jobInfo.getJobGroup()));
+            log.info(">>>>> jobName = [" + jobInfo.getJobName() + "]" + " deleted.");
+            return true;
+        } catch (SchedulerException e) {
+            log.error("Failed to delete job - {}", jobInfo.getJobName(), e);
+            return false;
+        }
+    }
 }
